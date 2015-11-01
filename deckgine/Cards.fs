@@ -3,6 +3,7 @@
 open System
 open System.Collections.Generic
 open LanguagePrimitives
+open fsext.System
 
 [<FlagsAttribute>]
 type Card = 
@@ -20,10 +21,38 @@ type Card =
     | HQ = 0x10000000000UL | DQ = 0x20000000000UL | CQ = 0x40000000000UL | SQ = 0x80000000000UL
     | HK = 0x100000000000UL | DK = 0x200000000000UL | CK = 0x400000000000UL | SK = 0x800000000000UL
     | HA = 0x1000000000000UL | DA = 0x2000000000000UL | CA = 0x4000000000000UL | SA = 0x8000000000000UL
-    | JR = 0x10000000000000UL | JB = 0x20000000000000UL
+
+[<FlagsAttribute>]
+type Suit = None = 0 | Hearts = 1 | Diams = 2 | Clubs = 4 | Spades = 8
 
 module Cards =
     let make (source:uint64) : Card = EnumOfValue source
+    let private hbit = make 0x1111111111111UL
+    let private dbit = make 0x2222222222222UL
+    let private cbit = make 0x4444444444444UL
+    let private sbit = make 0x8888888888888UL
+
+    let str (cards:Card) : string =
+        let str = cards.ToString()
+        match str.[1] with
+        | 'T' -> string ([|"10", str.[0]|])
+        | x -> string ([|x, str.[0]|])
+    
+    let cardsOf (suit:Suit) (cards:Card) = 
+        match suit with
+        | Suit.Hearts -> cards &&& hbit
+        | Suit.Diams -> cards &&& dbit
+        | Suit.Clubs -> cards &&& cbit
+        | Suit.Spades -> cards &&& sbit
+        | _ -> raise (Exception (sprintf "Unknown suit type %A" suit))
+
+    let count (cards:Card) = (EnumToValue cards).numbits()
+
+    let suits (cards:Card) : Suit =
+        Enum.GetValues(typeof<Suit>)
+        |> Seq.i (fun i -> enum<Suit> i)
+        |> Seq.map (fun (s:Suit) -> (s,cardsOf s cards))
+        |> Seq.fold (fun suits (s,cards) -> if cards != Card.empty then (s ||| suits) else suits) Suit.None
 
     let isEmpty (set:Card) = set = Card.empty
     
@@ -50,4 +79,5 @@ module Cards =
         |> List.map (fun card -> (random.Next(), card))
         |> List.sortBy (fun (i,card) -> i)
         |> List.map (fun (i, card) -> card)
+        |> fun l -> (Seq.ofList l, List.length l)
 

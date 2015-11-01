@@ -5,14 +5,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>cc55b6ac-749e-42a3-b3ae-b6660ec51e94</ProjectGuid>
+    <ProjectGuid>51045789-7306-4307-a870-ba2b77e789a1</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>deckgine</RootNamespace>
-    <AssemblyName>deckgine</AssemblyName>
+    <RootNamespace>fsext</RootNamespace>
+    <AssemblyName>fsext</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Name>deckgine</Name>
+    <Name>fsext</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,7 +22,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\deckgine.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\fsext.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,7 +31,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\deckgine.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\fsext.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -44,17 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Cards.fs" />
-    <Compile Include="Combinations.fs" />
-    <Compile Include="Decks.fs" />
+    <Compile Include="System.fs" />
     <None Include="Script.fsx" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\fsext\fsext.fsproj">
-      <Name>fsext</Name>
-      <Project>{51045789-7306-4307-a870-ba2b77e789a1}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
