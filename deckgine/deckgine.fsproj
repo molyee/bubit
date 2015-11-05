@@ -45,7 +45,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Cards.fs" />
-    <Compile Include="Combinations.fs" />
+    <Compile Include="Hands.fs" />
     <Compile Include="Decks.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>

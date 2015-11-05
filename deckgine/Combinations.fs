@@ -1,4 +1,0 @@
-﻿namespace deckgine
-
-module Combinations =
-    ()

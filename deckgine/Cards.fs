@@ -5,7 +5,7 @@ open System.Collections.Generic
 open LanguagePrimitives
 open fsext.System
 
-[<FlagsAttribute>]
+[<Flags>]
 type Card = 
     empty = 0x0UL
     | H2 = 0x1UL | D2 = 0x2UL | C2 = 0x4UL | S2 = 0x8UL
@@ -22,8 +22,14 @@ type Card =
     | HK = 0x100000000000UL | DK = 0x200000000000UL | CK = 0x400000000000UL | SK = 0x800000000000UL
     | HA = 0x1000000000000UL | DA = 0x2000000000000UL | CA = 0x4000000000000UL | SA = 0x8000000000000UL
 
-[<FlagsAttribute>]
+[<Flags>]
 type Suit = None = 0 | Hearts = 1 | Diams = 2 | Clubs = 4 | Spades = 8
+
+type Kind =
+    Two = 0 | Three = 1 | Four = 2 | Five = 3
+    | Six = 4 | Seven = 5 | Eight = 6 | Nine = 7
+    | Ten = 8 | Jack = 9 | Queen = 10
+    | King = 11 | Ace = 12
 
 module Cards =
     let make (source:uint64) : Card = EnumOfValue source
@@ -31,6 +37,8 @@ module Cards =
     let private dbit = make 0x2222222222222UL
     let private cbit = make 0x4444444444444UL
     let private sbit = make 0x8888888888888UL
+    let private cardsOfKind = Enum.toSeq<Kind>() |> Seq.map (fun k -> (k,make (0xFUL <<< 4 * EnumToValue k)))
+    let private suits = Enum.toSeq<Suit>()
 
     let str (cards:Card) : string =
         let str = cards.ToString()
@@ -46,19 +54,25 @@ module Cards =
         | Suit.Spades -> cards &&& sbit
         | _ -> raise (Exception (sprintf "Unknown suit type %A" suit))
 
-    let count (cards:Card) = (EnumToValue cards).numbits()
-
-    let suits (cards:Card) : Suit =
-        Enum.GetValues(typeof<Suit>)
-        |> Seq.i (fun i -> enum<Suit> i)
-        |> Seq.map (fun (s:Suit) -> (s,cardsOf s cards))
-        |> Seq.fold (fun suits (s,cards) -> if cards != Card.empty then (s ||| suits) else suits) Suit.None
+    let count (cards:Card) = int((EnumToValue cards).numbits())
 
     let isEmpty (set:Card) = set = Card.empty
     
+    let flush (cards:Card) =
+        suits
+        |> Seq.map (fun suit -> (suit,cardsOf suit cards))
+        |> Seq.filter (fun (suit,set) -> not (isEmpty set))
+        |> List.ofSeq
+
+    let split (cards:Card) =
+        cardsOfKind
+        |> Seq.map (fun (kind,mask) -> (kind,mask &&& cards))
+        |> Seq.filter (fun (kind,set) -> not (isEmpty set))
+        |> List.ofSeq
+
     let contains (cards:Card) (set:Card) = set &&& cards = cards
 
-    let intersect (set1:Card) (set2:Card) = not (set1 &&& set2 = Card.empty)
+    let intersect (set1:Card) (set2:Card) = not (isEmpty (set1 &&& set2))
 
     let pick (cards:Card) (set:Card) =
         match contains cards set with
@@ -80,4 +94,3 @@ module Cards =
         |> List.sortBy (fun (i,card) -> i)
         |> List.map (fun (i, card) -> card)
         |> fun l -> (Seq.ofList l, List.length l)
-
