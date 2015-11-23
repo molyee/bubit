@@ -1,9 +1,12 @@
 ﻿namespace fsext
 
+open System
 open System.Runtime.CompilerServices
 open LanguagePrimitives
 
 module System =
+
+    let enum64<'a when 'a:enum<uint64>> (value:uint64) : 'a = EnumOfValue value
 
     [<Extention>]
     type System.Int32 with
@@ -23,7 +26,5 @@ module System =
 
     [<Extention>]
     type System.Enum with
-        static member toSeq<'a when 'a:enum<int>> () =
-            let values = System.Enum.GetValues (typeof<'a>)
-            [values.GetLowerBound 0 .. values.GetUpperBound 0]
-            |> Seq.map (fun x -> EnumOfValue<int,'a>(x))
+        static member toList<'a when 'a:enum<int>> () =
+            Enum.GetValues (typeof<'a>) :?> 'a[] |> List.ofArray

@@ -1,8 +1,6 @@
 ﻿namespace deckgine
 
 open System
-open System.Collections.Generic
-open LanguagePrimitives
 open fsext.System
 
 [<Flags>]
@@ -31,14 +29,31 @@ type Kind =
     | Ten = 8 | Jack = 9 | Queen = 10
     | King = 11 | Ace = 12
 
+exception PickErr of Card * Card
+exception JoinErr of Card * Card
+exception SuitErr of Card * Suit
+exception NotEnoughErr of Card * int
+
+type CardInfo = { card:Card; kind:Kind; suit:Suit }
+
 module Cards =
-    let make (source:uint64) : Card = EnumOfValue source
+    let make (source:uint64) : Card = enum64<Card> source
     let private hbit = make 0x1111111111111UL
     let private dbit = make 0x2222222222222UL
     let private cbit = make 0x4444444444444UL
     let private sbit = make 0x8888888888888UL
-    let private cardsOfKind = Enum.toSeq<Kind>() |> Seq.map (fun k -> (k,make (0xFUL <<< 4 * EnumToValue k)))
-    let private suits = Enum.toSeq<Suit>()
+    let private cardsOfKind = Enum.toList<Kind>() |> List.map (fun k -> (k,make (0xFUL <<< (4 * (int k))))) |> List.rev
+    let private suits = Enum.toList<Suit>() |> List.tail
+    let private allCards = Enum.GetValues (typeof<Card>) :?> Card[] |> List.ofArray |> List.tail |> List.rev
+
+    let private extract (card:Card) =
+        let i = uint64 card
+        if not (i &&& (i - 1UL) = 0UL) then raise (Exception(sprintf "Maybe multiple cards received. Not pow of 2 - %A (%d)" card i))
+        let kind = int (Math.Floor (Math.Log (float i, 16.)))
+        let suit = int ((i >>> (4 * kind)) % 16UL)
+        {card=card; kind=enum<Kind> kind; suit=enum<Suit> suit}
+        
+    let private extracted = allCards |> List.map extract
 
     let str (cards:Card) : string =
         let str = cards.ToString()
@@ -46,50 +61,73 @@ module Cards =
         | 'T' -> string ([|"10", str.[0]|])
         | x -> string ([|x, str.[0]|])
     
-    let cardsOf (suit:Suit) (cards:Card) = 
+    let inline isEmpty (set:Card) = set = Card.empty
+    
+    let inline private containsAll (cards:Card) (set:Card) = set &&& cards = cards
+
+    let existIn (cards:Card) (card:Card) = containsAll card cards
+
+    let ofKind (kind:Kind) (cards:Card) =
+        cardsOfKind |> Seq.filter (fun (k,c) -> k = kind) |> List.ofSeq
+
+    let ofSuit (suit:Suit) (cards:Card) = 
         match suit with
         | Suit.Hearts -> cards &&& hbit
         | Suit.Diams -> cards &&& dbit
         | Suit.Clubs -> cards &&& cbit
         | Suit.Spades -> cards &&& sbit
-        | _ -> raise (Exception (sprintf "Unknown suit type %A" suit))
+        | _ -> raise <| SuitErr (cards,suit)
 
-    let count (cards:Card) = int((EnumToValue cards).numbits())
-
-    let isEmpty (set:Card) = set = Card.empty
+    let count (cards:Card) = int((uint64 cards).numbits())
     
+    let top (cards:Card) = allCards |> List.find (existIn cards)
+
+    let less (cards:Card) = allCards |> List.findBack (existIn cards)
+
+    let toList (cards:Card) = allCards |> List.filter (existIn cards)
+
     let flush (cards:Card) =
         suits
-        |> Seq.map (fun suit -> (suit,cardsOf suit cards))
+        |> Seq.map (fun suit -> (suit,ofSuit suit cards))
         |> Seq.filter (fun (suit,set) -> not (isEmpty set))
-        |> List.ofSeq
+        |> Map.ofSeq
 
     let split (cards:Card) =
         cardsOfKind
         |> Seq.map (fun (kind,mask) -> (kind,mask &&& cards))
         |> Seq.filter (fun (kind,set) -> not (isEmpty set))
-        |> List.ofSeq
-
-    let contains (cards:Card) (set:Card) = set &&& cards = cards
-
-    let intersect (set1:Card) (set2:Card) = not (isEmpty (set1 &&& set2))
+        |> Map.ofSeq
 
     let pick (cards:Card) (set:Card) =
-        match contains cards set with
+        match containsAll cards set with
         | true -> set ^^^ cards
-        | _ -> raise (InvalidOperationException (sprintf "Some cards '%A' not found in the set '%A'" cards set))
+        | _ -> raise <| PickErr (cards, set)
 
     let join (cards:Card) (set:Card) =
-        match intersect cards set with
-        | false -> cards ||| set
-        | _ -> raise (InvalidOperationException (sprintf "Some cards '%A' found in the set '%A'" cards set))
+        match cards &&& set with
+        | Card.empty -> cards ||| set
+        | _ -> raise <| JoinErr (cards, set)
+   
+    let unzip (cards:Card) =
+        extracted |> List.filter (fun info -> existIn cards info.card)
+
+    let zip (cards:CardInfo seq) =
+        cards |> Seq.fold (fun cs info -> join cs info.card) Card.empty
     
+    let best (num:int) (cards:Card) =
+        let rec best' (num:int) (count:int) (cards:Card) =
+            match count with
+            | c when c > num ->
+                let h = top cards
+                h :: best' (num-1) (c-1) (pick cards h)
+            | c when c = num -> toList cards
+            | _ -> raise <| NotEnoughErr (cards,num)
+        best' num (count cards) cards
+
     let shuffle (cards:Card) : (Card seq * int) =
         let random = Random(DateTime.UtcNow.Millisecond)
-        let sorted = new SortedList<int, Card>();
-        [0..63]
-        |> List.map (fun x -> EnumOfValue (1UL <<< x))
-        |> List.filter (fun card -> contains card cards)
+        cards
+        |> toList
         |> List.map (fun card -> (random.Next(), card))
         |> List.sortBy (fun (i,card) -> i)
         |> List.map (fun (i, card) -> card)
