@@ -31,7 +31,7 @@ module Hands =
             | 5 -> straight
             | _ ->
                 match cards with
-                | [] -> []
+                | [] -> straight
                 | info::t ->
                     match straight with
                     | [] -> getStraight' (info::[]) t
@@ -42,7 +42,26 @@ module Hands =
                         | x when x > 1 -> getStraight' (info::[]) t
                         | _ -> raise <| InvalidProgramException("Maybe not sorted cards received")
         let sorted = cards |> List.sortByDescending (fun ci -> uint64 ci.card)
-        getStraight' [] sorted
+        let straight = getStraight' [] sorted
+        match List.length straight with
+        | 5 -> straight
+        | 4 when (List.head straight).kind = Kind.Two ->
+            let aces = cards |> List.takeWhile (fun ci -> ci.kind = Kind.Ace)
+            match aces with
+            | [] -> []
+            | [ace] -> ace::straight
+            | h::t ->
+                let sh = List.head straight
+                let st = List.tail straight
+                let onekind = st |> List.forall (fun ci -> ci.kind = sh.kind)
+                match onekind with
+                | false -> h::straight
+                | true ->
+                    match aces |> List.filter (fun ace -> ace.kind = sh.kind) with
+                    | [] -> h::straight
+                    | [ace] -> ace::straight
+                    | ace::_ -> ace::straight
+        | _ -> []
 
     let get (cards:Card) =
         let getNoFlush (cards:Card) =
@@ -84,9 +103,13 @@ module Hands =
                 | Some (k,qds) -> make Rank.FourOfKind (qds |> List.take 4)
                 | None -> make Rank.Flush flush
             | h::t as l -> 
-                let opt = l |> List.tryFind (fun ci -> ci.kind = Kind.Ace)
-                match opt with
-                | Some ace -> make Rank.RoyalFlush straighflush
+                let optace = l |> List.tryFind (fun ci -> ci.kind = Kind.Ace)
+                match optace with
                 | None -> make Rank.StraightFlush straighflush
+                | Some ace ->
+                    let optking  = l |> List.tryFind (fun ci -> ci.kind = Kind.King)
+                    match optking with
+                    | Some king -> make Rank.RoyalFlush straighflush
+                    | _ -> make Rank.StraightFlush straighflush
         | _ -> raise <| NotImplementedException("Can't select best flush from list yet")
         

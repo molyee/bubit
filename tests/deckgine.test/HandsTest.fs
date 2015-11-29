@@ -23,8 +23,13 @@ type ``Checking hands`` () =
         |> isHand Rank.StraightFlush (Card.DK|||Card.DQ|||Card.DJ|||Card.DT|||Card.D9)
 
     [<Fact>]
-    let ``Given Ah,Ac,Ad,As,5c,4c,3c,2c should be a Four of Kind (A)`` () =
+    let ``Given Ah,Ac,Ad,As,5c,4c,3c,2c should be a Straight Flush (5c..Ac)`` () =
         Card.HA|||Card.CA|||Card.DA|||Card.SA|||Card.C5|||Card.C4|||Card.C3|||Card.C2
+        |> isHand Rank.StraightFlush (Card.C5|||Card.C4|||Card.C3|||Card.C2|||Card.CA)
+
+    [<Fact>]
+    let ``Given Ah,Ac,Ad,As,5c,4c,3c,2c should be a Four of Kind (A)`` () =
+        Card.HA|||Card.CA|||Card.DA|||Card.SA|||Card.C6|||Card.C4|||Card.C3|||Card.C2
         |> isHand Rank.FourOfKind (Card.HA|||Card.CA|||Card.DA|||Card.SA)
 
     [<Fact>]

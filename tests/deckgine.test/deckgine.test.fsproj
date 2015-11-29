@@ -101,7 +101,6 @@
     <None Include="Script.fsx" />
     <None Include="packages.config" />
     <None Include="App.config" />
-    <Compile Include="FsUnitSample.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\deckgine\deckgine.fsproj">
