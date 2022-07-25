@@ -1,2 +1,2 @@
 # bubit
-Some bubit
+UNMAINTAINED
